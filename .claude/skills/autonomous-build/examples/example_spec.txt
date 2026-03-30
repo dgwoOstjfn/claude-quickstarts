@@ -2,42 +2,538 @@
   <project_name>Todo App - Task Management Interface</project_name>
 
   <overview>
-    Build a simple but polished task management web application. Users can create,
-    edit, complete, and delete tasks. Tasks can be organized into categories with
-    color-coded labels. The UI should be clean and responsive.
+    Build a polished, full-featured task management web application. Users can create,
+    edit, complete, and delete tasks organized into categories with color-coded labels.
+    The app supports due dates, priority levels, search, drag-and-drop reordering, and
+    recurring tasks. The UI should be clean, responsive, and accessible with dark/light
+    theme support.
   </overview>
 
   <technology_stack>
     <frontend>
-      <framework>React with Vite</framework>
+      <framework>React 18 with Vite</framework>
       <styling>Tailwind CSS (via CDN)</styling>
-      <state_management>React hooks</state_management>
+      <state_management>React hooks and context</state_management>
+      <routing>React Router v6</routing>
+      <drag_and_drop>@dnd-kit/core for drag-and-drop</drag_and_drop>
+      <icons>Lucide React icons</icons>
+      <dates>date-fns for date formatting</dates>
+      <port>Launch on port 5173</port>
     </frontend>
     <backend>
       <runtime>Node.js with Express</runtime>
       <database>SQLite with better-sqlite3</database>
+      <validation>Express-validator for input validation</validation>
+      <port>Launch on port 3001</port>
     </backend>
+    <communication>
+      <api>RESTful JSON endpoints</api>
+      <cors>CORS enabled for localhost development</cors>
+    </communication>
   </technology_stack>
+
+  <prerequisites>
+    <environment_setup>
+      - Node.js 18+ installed
+      - npm as package manager
+      - Frontend and backend run as separate processes
+      - init.sh should install deps and start both servers
+    </environment_setup>
+  </prerequisites>
 
   <core_features>
     <task_management>
-      - Create tasks with title, description, due date, and category
-      - Edit existing tasks inline
-      - Mark tasks as complete/incomplete with checkbox
-      - Delete tasks with confirmation dialog
-      - Drag-and-drop reordering
+      - Create tasks with title (required), description (optional), due date, priority, and category
+      - Edit task title and description inline with click-to-edit
+      - Mark tasks as complete/incomplete with animated checkbox
+      - Delete tasks with confirmation dialog ("Are you sure?")
+      - Drag-and-drop reordering within and across categories
+      - Batch select and bulk actions (complete, delete, move category)
+      - Duplicate an existing task
+      - Task detail modal with full editing capabilities
+      - Subtasks/checklist within a task (add, toggle, remove sub-items)
+      - Task notes/comments section in detail view
     </task_management>
+
+    <priority_system>
+      - Four priority levels: Urgent (red), High (orange), Medium (yellow), Low (green)
+      - Priority badge displayed on task card
+      - Sort tasks by priority
+      - Filter tasks by priority level
+      - Default priority: Medium
+    </priority_system>
+
+    <due_dates>
+      - Date picker for setting due dates
+      - Visual indicators: overdue (red), due today (orange), due this week (yellow)
+      - "No date" option to clear due date
+      - Sort tasks by due date
+      - Filter: overdue, due today, due this week, upcoming, no date
+      - Relative date display ("2 days ago", "in 3 days", "today")
+    </due_dates>
+
+    <recurring_tasks>
+      - Set task recurrence: daily, weekly, monthly, custom interval
+      - When completing a recurring task, auto-create next occurrence
+      - Show recurrence icon and interval on task card
+      - Edit or remove recurrence from task detail
+    </recurring_tasks>
+
     <categories>
-      - Create custom categories with name and color
-      - Filter tasks by category
-      - Default categories: Work, Personal, Shopping, Health
+      - Create custom categories with name and color picker
+      - Edit category name and color
+      - Delete category (with option to reassign or delete tasks)
+      - Filter tasks by category (single or multiple)
+      - Default categories: Work (#3B82F6 blue), Personal (#8B5CF6 purple), Shopping (#10B981 green), Health (#EF4444 red)
+      - Category sidebar with task count badges
+      - "All Tasks" and "Uncategorized" virtual categories
+      - Drag tasks between category sections
     </categories>
-    <ui_requirements>
-      - Responsive layout (mobile + desktop)
-      - Dark/light theme toggle
-      - Smooth animations on task state changes
-      - Empty state illustration when no tasks
-      - Task count badge per category
-    </ui_requirements>
+
+    <search_and_filter>
+      - Global search bar with real-time filtering as you type
+      - Search matches title and description content
+      - Highlight matching text in results
+      - Combined filters: category + priority + due date + status
+      - Clear all filters button
+      - Show active filter count badge
+      - Save filter presets (e.g., "My urgent work tasks")
+    </search_and_filter>
+
+    <sorting>
+      - Sort by: created date, due date, priority, alphabetical, manual order
+      - Toggle ascending/descending
+      - Persist sort preference per category
+      - Sort indicator in column header
+    </sorting>
+
+    <statistics_dashboard>
+      - Tasks completed today/this week/this month
+      - Completion rate percentage with progress ring
+      - Tasks by category (pie/donut chart)
+      - Tasks by priority (bar chart)
+      - Overdue tasks count with warning
+      - Streak: consecutive days with completed tasks
+    </statistics_dashboard>
   </core_features>
+
+  <database_schema>
+    <tables>
+      <categories>
+        - id INTEGER PRIMARY KEY AUTOINCREMENT
+        - name TEXT NOT NULL
+        - color TEXT NOT NULL (hex color code)
+        - position INTEGER NOT NULL DEFAULT 0
+        - created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        - updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      </categories>
+
+      <tasks>
+        - id INTEGER PRIMARY KEY AUTOINCREMENT
+        - title TEXT NOT NULL
+        - description TEXT DEFAULT ''
+        - is_completed INTEGER NOT NULL DEFAULT 0
+        - priority TEXT NOT NULL DEFAULT 'medium' CHECK(priority IN ('urgent','high','medium','low'))
+        - category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL
+        - due_date TEXT (ISO 8601 date string or NULL)
+        - recurrence TEXT DEFAULT NULL (JSON: {"interval":"daily|weekly|monthly","every":1})
+        - position INTEGER NOT NULL DEFAULT 0
+        - created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        - updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        - completed_at TEXT DEFAULT NULL
+      </tasks>
+
+      <subtasks>
+        - id INTEGER PRIMARY KEY AUTOINCREMENT
+        - task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE
+        - title TEXT NOT NULL
+        - is_completed INTEGER NOT NULL DEFAULT 0
+        - position INTEGER NOT NULL DEFAULT 0
+        - created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      </subtasks>
+
+      <task_notes>
+        - id INTEGER PRIMARY KEY AUTOINCREMENT
+        - task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE
+        - content TEXT NOT NULL
+        - created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      </task_notes>
+
+      <filter_presets>
+        - id INTEGER PRIMARY KEY AUTOINCREMENT
+        - name TEXT NOT NULL
+        - filters TEXT NOT NULL (JSON: {"categories":[],"priorities":[],"due":"overdue"})
+        - created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      </filter_presets>
+    </tables>
+  </database_schema>
+
+  <api_endpoints_summary>
+    <tasks>
+      - GET    /api/tasks                    List tasks (query: category, priority, due, status, search, sort, order)
+      - POST   /api/tasks                    Create task (body: title, description, priority, category_id, due_date, recurrence)
+      - GET    /api/tasks/:id                Get task with subtasks and notes
+      - PUT    /api/tasks/:id                Update task fields
+      - DELETE /api/tasks/:id                Delete task
+      - PATCH  /api/tasks/:id/toggle         Toggle complete/incomplete
+      - POST   /api/tasks/:id/duplicate      Duplicate task
+      - PUT    /api/tasks/reorder            Bulk update positions (body: [{id, position}])
+      - POST   /api/tasks/bulk               Bulk action (body: {ids, action: "complete"|"delete"|"move", category_id?})
+    </tasks>
+
+    <subtasks>
+      - GET    /api/tasks/:id/subtasks       List subtasks
+      - POST   /api/tasks/:id/subtasks       Create subtask
+      - PUT    /api/subtasks/:id             Update subtask
+      - DELETE /api/subtasks/:id             Delete subtask
+      - PATCH  /api/subtasks/:id/toggle      Toggle subtask complete
+    </subtasks>
+
+    <notes>
+      - GET    /api/tasks/:id/notes          List notes for task
+      - POST   /api/tasks/:id/notes          Add note
+      - DELETE /api/notes/:id                Delete note
+    </notes>
+
+    <categories>
+      - GET    /api/categories               List all categories with task counts
+      - POST   /api/categories               Create category
+      - PUT    /api/categories/:id           Update category
+      - DELETE /api/categories/:id           Delete category (query: reassign_to?)
+      - PUT    /api/categories/reorder       Reorder categories
+    </categories>
+
+    <filters>
+      - GET    /api/filters                  List saved filter presets
+      - POST   /api/filters                  Save filter preset
+      - DELETE /api/filters/:id             Delete filter preset
+    </filters>
+
+    <stats>
+      - GET    /api/stats                    Get dashboard statistics
+      - GET    /api/stats/history            Get completion history (query: days=30)
+    </stats>
+  </api_endpoints_summary>
+
+  <ui_layout>
+    <main_structure>
+      - Two-column layout: sidebar (categories/filters) + main content area
+      - Collapsible sidebar with hamburger toggle on mobile
+      - Responsive: single column on mobile (&lt;768px), two columns on desktop
+      - Fixed header with app title, search bar, and theme toggle
+      - Floating action button (FAB) for "Add Task" on mobile
+    </main_structure>
+
+    <sidebar>
+      - App logo/title at top
+      - "All Tasks" link with total count
+      - Category list with color dots and task count badges
+      - "Add Category" button at bottom of category list
+      - Priority filter section (collapsible)
+      - Due date filter section (collapsible)
+      - Saved filter presets section
+      - "Statistics" link to dashboard view
+      - Theme toggle (sun/moon icon) at bottom
+    </sidebar>
+
+    <main_content>
+      - Breadcrumb: current category or filter name
+      - Sort dropdown and view options (list/compact)
+      - Task list with drag handles
+      - Each task card shows: checkbox, title, priority badge, due date, category tag, subtask progress
+      - "Add Task" input at top (inline quick-add)
+      - Empty state: illustration + "No tasks yet" message + "Add your first task" button
+      - Completed tasks section (collapsible, at bottom, with count)
+    </main_content>
+
+    <task_detail_modal>
+      - Full task title (editable)
+      - Description textarea (editable, supports markdown preview)
+      - Priority selector (4 colored buttons)
+      - Category dropdown
+      - Due date picker
+      - Recurrence selector
+      - Subtasks checklist (add, toggle, remove)
+      - Notes section with timestamp
+      - "Duplicate" and "Delete" buttons in footer
+      - Close button (X) and click-outside-to-close
+    </task_detail_modal>
+
+    <statistics_view>
+      - Summary cards: total, completed today, completion rate, streak
+      - Tasks by category chart (colored donut)
+      - Tasks by priority chart (horizontal bar)
+      - 30-day completion history (area chart)
+      - Overdue tasks list with quick-action buttons
+    </statistics_view>
+  </ui_layout>
+
+  <design_system>
+    <color_palette>
+      - Primary: Indigo (#6366F1) for buttons, links, active states
+      - Background: White (#FFFFFF light), Dark gray (#111827 dark)
+      - Surface: Gray-50 (#F9FAFB light), Gray-800 (#1F2937 dark)
+      - Text primary: Gray-900 (#111827 light), Gray-100 (#F3F4F6 dark)
+      - Text secondary: Gray-500 (#6B7280 light), Gray-400 (#9CA3AF dark)
+      - Borders: Gray-200 (#E5E7EB light), Gray-700 (#374151 dark)
+      - Success: Green-500 (#10B981)
+      - Warning: Amber-500 (#F59E0B)
+      - Danger: Red-500 (#EF4444)
+      - Priority colors: Urgent #EF4444, High #F97316, Medium #EAB308, Low #22C55E
+    </color_palette>
+
+    <typography>
+      - Font family: Inter, system-ui, -apple-system, sans-serif
+      - Headings: font-semibold, tracking-tight
+      - Body: font-normal, text-sm (14px) to text-base (16px)
+      - Task titles: text-base font-medium
+      - Badges/labels: text-xs font-medium uppercase tracking-wide
+      - Monospace: JetBrains Mono (for code in descriptions)
+    </typography>
+
+    <components>
+      <task_card>
+        - Rounded-lg border with subtle shadow-sm
+        - Left border colored by priority (4px)
+        - Checkbox: rounded-full, animated fill on complete
+        - Completed tasks: line-through title, reduced opacity
+        - Hover: shadow-md elevation, show action buttons
+        - Drag handle: 6-dot grip icon on left
+        - Padding: px-4 py-3
+      </task_card>
+
+      <buttons>
+        - Primary: bg-indigo-600 text-white rounded-lg px-4 py-2, hover:bg-indigo-700
+        - Secondary: border border-gray-300 rounded-lg, hover:bg-gray-50
+        - Danger: bg-red-600 text-white rounded-lg, hover:bg-red-700
+        - Icon button: p-2 rounded-full hover:bg-gray-100
+        - FAB: fixed bottom-right, rounded-full, shadow-lg, bg-indigo-600
+      </buttons>
+
+      <inputs>
+        - Rounded-lg border-gray-300 focus:ring-2 focus:ring-indigo-500
+        - Placeholder text in gray-400
+        - Error state: border-red-500, red helper text below
+        - Search input: with magnifying glass icon prefix
+      </inputs>
+
+      <badges>
+        - Priority: pill shape, colored background with white text
+        - Category: pill shape, colored dot + category name
+        - Count: rounded-full bg-gray-200 text-xs min-w-[20px] text-center
+        - Due date: text with clock icon, color varies by urgency
+      </badges>
+
+      <modal>
+        - Centered overlay with backdrop blur
+        - Max-width: 640px, rounded-xl, shadow-2xl
+        - Header with title and close button
+        - Scrollable body
+        - Footer with action buttons
+        - Transition: fade + scale on open/close
+      </modal>
+    </components>
+
+    <animations>
+      - Task complete: checkbox fill animation (200ms), strikethrough slide (300ms)
+      - Task add: fade-in + slide-down (200ms)
+      - Task delete: fade-out + slide-left (200ms)
+      - Modal: backdrop fade (150ms), content scale-up (200ms)
+      - Sidebar collapse: slide-left (200ms)
+      - Theme switch: smooth color transition (300ms) on all elements
+      - Drag: lifted shadow + slight scale (1.02)
+      - Hover: shadow transition (150ms)
+    </animations>
+  </design_system>
+
+  <key_interactions>
+    <task_creation_flow>
+      1. User clicks "Add Task" or presses keyboard shortcut (N)
+      2. Inline input appears at top of task list with focus
+      3. User types task title, presses Enter
+      4. Task created with default priority (Medium), current category, no due date
+      5. Task card appears with slide-down animation
+      6. User can click task to open detail modal for full editing
+    </task_creation_flow>
+
+    <task_completion_flow>
+      1. User clicks checkbox on task card
+      2. Checkbox fills with animated checkmark
+      3. Title gets strikethrough animation
+      4. After 500ms delay, task slides to "Completed" section at bottom
+      5. If task has recurrence, new task auto-created for next occurrence
+      6. Statistics update in real-time
+    </task_completion_flow>
+
+    <task_editing_flow>
+      1. User clicks task card (not checkbox)
+      2. Detail modal opens with current values
+      3. All fields are editable inline
+      4. Changes auto-save on field blur (debounced 500ms)
+      5. "Delete" button shows confirmation dialog
+      6. Close modal with X, Escape key, or click outside
+    </task_editing_flow>
+
+    <category_management_flow>
+      1. User clicks "Add Category" in sidebar
+      2. Inline input appears with color picker
+      3. User enters name and selects color
+      4. Category appears in sidebar with 0 count badge
+      5. Right-click category for edit/delete context menu
+      6. Deleting category prompts: reassign tasks or delete them
+    </category_management_flow>
+
+    <search_and_filter_flow>
+      1. User types in search bar (or presses / shortcut)
+      2. Tasks filter in real-time as user types (debounced 300ms)
+      3. Matching text highlighted in yellow in results
+      4. User can combine with category/priority/due filters
+      5. Active filter count shown as badge on filter icon
+      6. "Clear all" button resets to default view
+    </search_and_filter_flow>
+
+    <drag_and_drop_flow>
+      1. User grabs drag handle on task card
+      2. Task lifts with shadow + slight scale
+      3. Drop zones highlight as task moves over them
+      4. Drop task to reorder within list
+      5. Drop task on category in sidebar to reassign
+      6. Position saved to database on drop
+    </drag_and_drop_flow>
+  </key_interactions>
+
+  <implementation_steps>
+    <step number="1">
+      <title>Project Setup and Database</title>
+      <tasks>
+        - Initialize Vite React project with Tailwind CSS
+        - Set up Express server with SQLite
+        - Create database schema with all tables
+        - Seed default categories
+        - Set up CORS and JSON middleware
+        - Create init.sh script
+      </tasks>
+    </step>
+
+    <step number="2">
+      <title>Core Task CRUD</title>
+      <tasks>
+        - Implement all /api/tasks endpoints
+        - Build task list component with basic cards
+        - Create inline quick-add task input
+        - Implement task completion toggle with animation
+        - Add task deletion with confirmation dialog
+        - Build task detail modal with all fields
+      </tasks>
+    </step>
+
+    <step number="3">
+      <title>Categories and Sidebar</title>
+      <tasks>
+        - Implement /api/categories endpoints
+        - Build sidebar with category list and counts
+        - Add category creation with color picker
+        - Implement category editing and deletion
+        - Add category filtering
+        - Build "All Tasks" and "Uncategorized" views
+      </tasks>
+    </step>
+
+    <step number="4">
+      <title>Priority, Due Dates, and Sorting</title>
+      <tasks>
+        - Add priority system with colored badges
+        - Implement date picker for due dates
+        - Add overdue/today/upcoming visual indicators
+        - Build sort controls (by date, priority, name, manual)
+        - Add filter by priority and due date
+      </tasks>
+    </step>
+
+    <step number="5">
+      <title>Advanced Task Features</title>
+      <tasks>
+        - Implement subtasks (add, toggle, remove)
+        - Add task notes/comments
+        - Build recurring tasks system
+        - Implement task duplication
+        - Add batch selection and bulk actions
+        - Build drag-and-drop reordering
+      </tasks>
+    </step>
+
+    <step number="6">
+      <title>Search, Filters, and Presets</title>
+      <tasks>
+        - Build global search with real-time filtering
+        - Add text highlight in search results
+        - Implement combined filter system
+        - Build save/load filter presets
+        - Add active filter count badge
+      </tasks>
+    </step>
+
+    <step number="7">
+      <title>Statistics Dashboard</title>
+      <tasks>
+        - Implement /api/stats endpoints
+        - Build summary cards (total, completed, rate, streak)
+        - Add tasks-by-category donut chart
+        - Add tasks-by-priority bar chart
+        - Build 30-day completion history chart
+        - Add overdue tasks quick-action list
+      </tasks>
+    </step>
+
+    <step number="8">
+      <title>Theme, Responsive, and Polish</title>
+      <tasks>
+        - Implement dark/light theme toggle with persistence
+        - Make layout fully responsive (mobile sidebar collapse)
+        - Add all animations (task add/complete/delete, modal, drag)
+        - Build empty states with illustrations
+        - Add keyboard shortcuts (N, /, Escape)
+        - Polish typography, spacing, and shadows
+        - Add loading skeletons and error states
+      </tasks>
+    </step>
+  </implementation_steps>
+
+  <success_criteria>
+    <functionality>
+      - All CRUD operations work for tasks, categories, subtasks, notes
+      - Search and filters work correctly in combination
+      - Drag-and-drop reorders persist to database
+      - Recurring tasks auto-create next occurrence
+      - Batch operations work on multiple selected tasks
+      - Statistics calculate correctly
+    </functionality>
+
+    <user_experience>
+      - Smooth, responsive interactions with no lag
+      - All animations complete without jank
+      - Intuitive task creation and editing flow
+      - Search results appear as user types
+      - Theme toggle is instant with smooth transition
+      - Works well on mobile (375px+) and desktop
+    </user_experience>
+
+    <technical_quality>
+      - Clean component structure with proper separation
+      - API validation on all endpoints
+      - Proper error handling with user-friendly messages
+      - No console errors or warnings
+      - Database queries optimized with proper indexes
+      - Consistent code style throughout
+    </technical_quality>
+
+    <design_polish>
+      - Consistent spacing and typography
+      - All interactive elements have hover/focus states
+      - Proper contrast ratios for accessibility
+      - Smooth transitions between all states
+      - Empty states handled gracefully
+      - Dark mode fully consistent (no white flashes)
+    </design_polish>
+  </success_criteria>
 </project_specification>
