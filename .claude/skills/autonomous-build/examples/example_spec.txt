@@ -1,0 +1,43 @@
+<project_specification>
+  <project_name>Todo App - Task Management Interface</project_name>
+
+  <overview>
+    Build a simple but polished task management web application. Users can create,
+    edit, complete, and delete tasks. Tasks can be organized into categories with
+    color-coded labels. The UI should be clean and responsive.
+  </overview>
+
+  <technology_stack>
+    <frontend>
+      <framework>React with Vite</framework>
+      <styling>Tailwind CSS (via CDN)</styling>
+      <state_management>React hooks</state_management>
+    </frontend>
+    <backend>
+      <runtime>Node.js with Express</runtime>
+      <database>SQLite with better-sqlite3</database>
+    </backend>
+  </technology_stack>
+
+  <core_features>
+    <task_management>
+      - Create tasks with title, description, due date, and category
+      - Edit existing tasks inline
+      - Mark tasks as complete/incomplete with checkbox
+      - Delete tasks with confirmation dialog
+      - Drag-and-drop reordering
+    </task_management>
+    <categories>
+      - Create custom categories with name and color
+      - Filter tasks by category
+      - Default categories: Work, Personal, Shopping, Health
+    </categories>
+    <ui_requirements>
+      - Responsive layout (mobile + desktop)
+      - Dark/light theme toggle
+      - Smooth animations on task state changes
+      - Empty state illustration when no tasks
+      - Task count badge per category
+    </ui_requirements>
+  </core_features>
+</project_specification>
