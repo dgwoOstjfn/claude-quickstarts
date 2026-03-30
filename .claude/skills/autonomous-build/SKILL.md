@@ -5,7 +5,7 @@ description: >
   Uses a two-phase pattern: (1) Initializer creates feature_list.json with 200 test cases,
   (2) Coder implements features one-by-one with browser verification.
   Re-invoke /autonomous-build after each session to continue progress.
-argument-hint: "[spec-file-path] [--project-dir path]"
+argument-hint: "[spec-file-path]"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 disable-model-invocation: true
 ---
@@ -18,17 +18,33 @@ is one session in a long-running development process.
 
 ## Arguments
 
-- `$0` — Path to the app specification file (required on first run, optional on continue)
-- `$1` — Optional: `--project-dir` flag
-- `$2` — Optional: project directory path (default: `./autonomous_build_output`)
+- `$ARGUMENTS` — Path to the app specification file (required on first run, optional on continue)
+
+## Project Directory
+
+**All work happens in the current working directory (CWD).**
+
+This means each project is naturally isolated — just `cd` into the project folder
+before invoking `/autonomous-build`. The skill stores all state files alongside
+the project code:
+
+```
+<cwd>/
+├── app_spec.txt            ← spec copied here on init (persists across sessions)
+├── feature_list.json       ← 200 test cases (the source of truth)
+├── claude-progress.txt     ← cross-session progress notes
+├── init.sh                 ← environment setup script
+├── src/                    ← project source code
+└── ...
+```
 
 ## Phase Detection
 
 Determine which phase you're in by checking the project state:
 
-!`[ -f "${2:-./autonomous_build_output}/feature_list.json" ] && echo "CONTINUE" || echo "INIT"`
+!`[ -f "feature_list.json" ] && echo "PHASE: CONTINUE" || echo "PHASE: INIT"`
 
-!`[ -f "${2:-./autonomous_build_output}/feature_list.json" ] && python3 ${CLAUDE_SKILL_DIR}/scripts/progress.py "${2:-./autonomous_build_output}" 2>/dev/null || echo "No progress yet"`
+!`[ -f "feature_list.json" ] && python3 ${CLAUDE_SKILL_DIR}/scripts/progress.py "." 2>/dev/null || echo "No progress yet — first run"`
 
 ## Instructions
 
@@ -46,33 +62,36 @@ Based on the phase detection above:
    with screenshots. No shortcuts.
 4. **Clean exit** — Always commit progress and update `claude-progress.txt` before finishing.
 5. **Fix regressions first** — If any previously-passing test is broken, fix it before new work.
-6. **Project directory** — All work happens in the project directory (default: `./autonomous_build_output`).
+6. **Spec file stays local** — On init, the spec is copied into CWD as `app_spec.txt`.
+   Future sessions read from this local copy, never the original path.
 
 ## Session Workflow Summary
 
 ```
-┌─────────────────────────────────────────────┐
-│  /autonomous-build spec.txt                 │  ← First run
-│                                             │
-│  1. Read spec file                          │
-│  2. Create feature_list.json (200 tests)    │
-│  3. Create init.sh                          │
-│  4. Initialize git repo                     │
-│  5. Set up project structure                │
-│  6. Optionally start implementing           │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│  cd ~/projects/my-app                               │
+│  /autonomous-build ~/specs/my-app-spec.txt          │  ← First run
+│                                                     │
+│  1. Copy spec → ./app_spec.txt                      │
+│  2. Create feature_list.json (200 tests)            │
+│  3. Create init.sh                                  │
+│  4. Initialize git repo                             │
+│  5. Set up project structure                        │
+│  6. Optionally start implementing                   │
+└─────────────────────────────────────────────────────┘
 
-┌─────────────────────────────────────────────┐
-│  /autonomous-build                          │  ← Subsequent runs
-│                                             │
-│  1. Orient: read progress, spec, git log    │
-│  2. Start servers (init.sh)                 │
-│  3. Verify existing passing tests           │
-│  4. Fix any regressions found               │
-│  5. Pick next failing feature               │
-│  6. Implement + verify with browser         │
-│  7. Mark passing, commit, update progress   │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│  cd ~/projects/my-app                               │
+│  /autonomous-build                                  │  ← Subsequent runs
+│                                                     │
+│  1. Orient: read app_spec.txt, progress, git log    │
+│  2. Start servers (init.sh)                         │
+│  3. Verify existing passing tests                   │
+│  4. Fix any regressions found                       │
+│  5. Pick next failing feature                       │
+│  6. Implement + verify with browser                 │
+│  7. Mark passing, commit, update progress           │
+└─────────────────────────────────────────────────────┘
 ```
 
 Re-invoke `/autonomous-build` to start the next session. Progress is tracked

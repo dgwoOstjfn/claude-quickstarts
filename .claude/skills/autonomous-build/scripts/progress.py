@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 def main():
-    project_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("./autonomous_build_output")
+    project_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(".")
     feature_file = project_dir / "feature_list.json"
 
     if not feature_file.exists():

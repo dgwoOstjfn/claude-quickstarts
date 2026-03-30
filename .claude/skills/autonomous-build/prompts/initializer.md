@@ -3,29 +3,26 @@
 You are the FIRST agent in a long-running autonomous development process.
 Your job is to set up the foundation for all future coding sessions.
 
-## Setup
-
-Set the project directory:
-
-```
-PROJECT_DIR="${2:-./autonomous_build_output}"
-mkdir -p "$PROJECT_DIR"
-```
-
-All files must be created inside `$PROJECT_DIR`.
+**All files are created in the current working directory (CWD).**
 
 ## Step 1: Read the Specification
 
-Read the spec file provided as `$0`. This contains the complete requirements
-for the application you will build. Study it carefully before proceeding.
+Read the spec file provided as `$ARGUMENTS`. This contains the complete
+requirements for the application you will build. Study it carefully.
 
 If no spec file argument was provided, stop and ask the user for one.
 
+Then **copy it into CWD** as `app_spec.txt` so future sessions can always find it:
+
+```bash
+cp "$ARGUMENTS" ./app_spec.txt
+```
+
 ## Step 2: Create feature_list.json
 
-Based on the spec, create `feature_list.json` in the project directory with
-**200 detailed end-to-end test cases**. This file is the single source of truth
-for what needs to be built.
+Based on the spec, create `feature_list.json` in CWD with **200 detailed
+end-to-end test cases**. This file is the single source of truth for what
+needs to be built.
 
 **Format:**
 
@@ -69,7 +66,7 @@ Features can ONLY be marked as passing. Never remove, edit descriptions, or modi
 
 ## Step 3: Create init.sh
 
-Create `init.sh` in the project directory that:
+Create `init.sh` in CWD that:
 
 1. Installs required dependencies
 2. Starts necessary servers/services
@@ -79,13 +76,10 @@ Base the script on the technology stack in the spec.
 
 ## Step 4: Initialize Git
 
-Inside the project directory, initialize a git repo and make your first commit:
-
 ```bash
-cd "$PROJECT_DIR"
 git init
-git add feature_list.json init.sh
-git commit -m "Initial setup: feature_list.json and init.sh"
+git add app_spec.txt feature_list.json init.sh
+git commit -m "Initial setup: app_spec.txt, feature_list.json, and init.sh"
 ```
 
 ## Step 5: Create Project Structure
@@ -109,7 +103,7 @@ Before finishing:
 1. Commit all work with descriptive messages
 2. Create `claude-progress.txt` summarizing what you accomplished
 3. Ensure feature_list.json is complete and saved
-4. Copy the spec file into the project directory for future sessions
+4. Verify `app_spec.txt` exists in CWD
 5. Leave the environment in a clean, working state
 
 The next `/autonomous-build` invocation will continue from here.

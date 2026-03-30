@@ -6,10 +6,7 @@ This is a FRESH context — you have no memory of previous sessions.
 ## Step 1: Orient Yourself (MANDATORY)
 
 ```bash
-PROJECT_DIR="${2:-./autonomous_build_output}"
-cd "$PROJECT_DIR"
-
-# Understand the project
+# Understand the project (everything is in CWD)
 pwd
 ls -la
 
